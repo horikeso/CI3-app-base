@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>管理ユーザー登録</title>
+</head>
+<body>
+    <form name="admin_form" method="POST" action="/backend/login/initialize">
+        <fieldset>
+            <legend>管理ユーザー登録</legend>
+            <div><label>ユーザー名</label>：<input type="text" name="name" value="{if isset($name)}{$name}{/if}" size="30" maxlength="20"/></div>
+            <div><label>メールアドレス</label>：<input type="email" name="mailadress" value="{if isset($mailadress)}{$mailadress}{/if}" /></div>
+            <div><label>パスワード</label>：<input type="password" name="password" value="{if isset($password)}{$password}{/if}" /></div>
+            {if ! empty($validation_errors)}<div style="color: red;">{$validation_errors}</div>{/if}
+            {if isset($error_message)}<div style="color: red;">{$error_message}</div>{/if}
+            <input type="hidden" name="{$csrf_token_name}" value="{$csrf_hash}">
+            <div><input type="submit" value="登録" /></div>
+        </fieldset>
+    </form>
+    {include file='backend/footer.html'}
+</body>
+</html>
