@@ -32,3 +32,5 @@ user_guide_src/cilexer/pycilexer.egg-info/*
 
 application/views/templates_c/*
 application/tests/build/*
+public/uploads/*
+!public/uploads/.gitkeep

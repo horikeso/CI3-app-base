@@ -1,84 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="utf-8">
-    <title>Welcome to CodeIgniter</title>
+<script>
+var scaleSlider = null;
+var scaleValue = null;
+var canvas = null;
+var context = null;
+var image = null;
+var fixFileObject = null;
+var scale = null;
+var messageArea = null;
+var csrf_token_name = "{$csrf_token_name}";
+var csrf_hash = "{$csrf_hash}";
 
-    <style type="text/css">
+document.addEventListener("DOMContentLoaded", function() {
+    canvas = document.getElementById("thumbnail");
+    context = canvas.getContext("2d");
 
-    ::selection { background-color: #E13300; color: white; }
-    ::-moz-selection { background-color: #E13300; color: white; }
+    scaleSlider = document.getElementById("scale");
+    scaleValue = document.getElementById("scale-value");
 
-    body {
-        background-color: #fff;
-        margin: 40px;
-        font: 13px/20px normal Helvetica, Arial, sans-serif;
-        color: #4F5155;
+    messageArea = document.getElementById("message")
+
+    scaleSlider.addEventListener("change", changeScale);
+
+    setFileEventListenner();
+});
+
+function changeScale() {
+    scaleValue.value = scaleSlider.value;
+    drawCanvas();
+}
+
+function setFileEventListenner() {
+    document.getElementById("file-selecter").addEventListener("change", createPreview);
+}
+
+function createPreview(event) {
+
+    fixFileObject = null;
+
+    var fileObject = event.target.files[0];
+
+    if (typeof fileObject === "undefined") {
+        return;
     }
 
-    a {
-        color: #003399;
-        background-color: transparent;
-        font-weight: normal;
+    if (fileObject.type.match(/^image\/(jpeg|png)$/) === null) {
+        // jpegとpng以外の場合はクリアして終了
+        var fileArea = document.getElementById("file-input");
+        fileArea.innerHTML = fileArea.innerHTML;
+        setFileEventListenner();
+        return;
     }
 
-    h1 {
-        color: #444;
-        background-color: transparent;
-        border-bottom: 1px solid #D0D0D0;
-        font-size: 19px;
-        font-weight: normal;
-        margin: 0 0 14px 0;
-        padding: 14px 15px 10px 15px;
+    fixFileObject = fileObject;
+
+    image = new Image();
+
+    var reader = new FileReader();
+
+    reader.onload = (function(fileObject) {
+        return function(event) {
+            image.src = event.target.result;// base64
+        };
+    })(fileObject);
+
+    image.onload = function() {
+        drawCanvas();
     }
 
-    code {
-        font-family: Consolas, Monaco, Courier New, Courier, monospace;
-        font-size: 12px;
-        background-color: #f9f9f9;
-        border: 1px solid #D0D0D0;
-        color: #002166;
-        display: block;
-        margin: 14px 0 14px 0;
-        padding: 12px 10px 12px 10px;
-    }
+    reader.readAsDataURL(fileObject);
+}
 
-    #body {
-        margin: 0 15px 0 15px;
+function drawCanvas() {
+    scale = scaleSlider.value;
+    if (image !== null) {
+        var imageWidth = parseInt(image.width * scale, 10);
+        var imageHeight = parseInt(image.height * scale, 10);
+        canvas.width = imageWidth;
+        canvas.height = imageHeight;
+        context.clearRect(0, 0, imageWidth, imageHeight);
+        context.drawImage(image, 0, 0, imageWidth, imageHeight);
     }
+}
 
-    p.footer {
-        text-align: right;
-        font-size: 11px;
-        border-top: 1px solid #D0D0D0;
-        line-height: 32px;
-        padding: 0 10px 0 10px;
-        margin: 20px 0 0 0;
-    }
+function submitResizeFile() {
+    if (image !== null) {
 
-    #container {
-        margin: 10px;
-        border: 1px solid #D0D0D0;
-        box-shadow: 0 0 8px #D0D0D0;
+        var resizeFileObject = null;
+
+        if (scale !== 1) {
+            // サイズ変更があった場合だけ送信用ファイルを作成
+            var image64Data = canvas.toDataURL(fixFileObject.type);
+            image64Data = image64Data.split(',')[1];
+            imageData = atob(image64Data);
+            var unit8Array = new Uint8Array(imageData.length);
+            unit8Array.forEach(function(element, index) {
+                unit8Array[index] = imageData.charCodeAt(index);
+            });
+            resizeFileObject = new File(
+                [unit8Array],
+                fixFileObject.name,
+                {
+                    type: fixFileObject.type
+                }
+            );
+        } else {
+            // サイズ変更がない場合はそのまま
+            resizeFileObject = fixFileObject;
+        }
+
+        var formData = new FormData();
+        formData.append(csrf_token_name, csrf_hash);
+        formData.append("file", resizeFileObject);
+
+        // input type file の 値はjavascriptで上書き出来ないのでajaxで送信する
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                csrf_hash = JSON.parse(xhr.response).csrf_hash;
+                if (xhr.status === 200) {
+                    messageArea.innerHTML = '<span style="color: green;">ファイルの送信に成功しました。</span>';
+                } else {
+                    messageArea.innerHTML = '<span style="color: red;">ファイルの送信に失敗しました。</span>';
+                }
+            }
+        }
+        xhr.open("POST", "/root/execute_upload");
+        xhr.send(formData);
     }
-    </style>
+}
+</script>
 </head>
 <body>
-<div id="container">
-    <h1>Welcome to CodeIgniter!</h1>
-
-    <div id="body">
-        <p>The page you are looking at is being generated dynamically by CodeIgniter.</p>
-
-        <p>If you would like to edit this page you'll find it located at:</p>
-        <code>application/views/templates/index.html</code>
-
-        <p>The corresponding controller for this page is found at:</p>
-        <code>application/controllers/Root.php</code>
-
-        <p>If you are exploring CodeIgniter for the very first time, you should start by reading the <a href="user_guide/">User Guide</a>.</p>
-    </div>
-</div>
-{phpinfo()}
+<form id="form">
+    Scale : <input id="scale" type="range" step="0.1" min="0.1" max="1" value="1"><input disabled id="scale-value" type="text" value="1" style="width: 2rem;">
+    <div id="file-input"><input id="file-selecter" type="file" name="file" accept="image/jpeg, image/png"></div>
+    <div><canvas id="thumbnail" width="10" height="10"></canvas></div>
+    <input type="button" value="送信" onclick="submitResizeFile()">
+    <div id="message"></div>
+</form>
 </body>
 </html>
