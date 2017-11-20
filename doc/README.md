@@ -89,6 +89,12 @@ application/config/config.php
 $config['log_threshold'] = 3;// Informational Messages
 $config['log_path'] = 'application/logs/';
 $config['log_file_extension'] = '.log';
+```
+
+ログファイルをログレベル毎に分ける
+```
+cp doc/MY_Log.php application/core/MY_Log.php
+```
 
 出力は方法は
 log_message('info', 'wellcom');
