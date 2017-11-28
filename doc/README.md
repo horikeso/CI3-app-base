@@ -114,6 +114,9 @@ $config['index_page'] = '';
 
 nginx.conf
 ```
+        # 413 Request Entity Too Large
+        client_max_body_size 20M;
+
         root   /home/public/app;
         index  index.php index.html index.htm;
 
