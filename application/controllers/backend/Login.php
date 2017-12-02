@@ -47,7 +47,8 @@ class Login extends CI_Controller {
         $this->form_validation->set_rules('name', 'ユーザー名', 'required|max_length[20]');
         $this->form_validation->set_rules('password', 'パスワード', 'required|min_length[6]');
 
-        if ($this->form_validation->run() === true) {
+        if ($this->form_validation->run() === true)
+        {
             // バリデーションエラーがない場合にログイン
 
             $user_data = [
