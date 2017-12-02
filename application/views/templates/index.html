@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Welcome to CodeIgniter</title>
+<script type="text/javascript" src="/public/js/pdf.js" async></script>
 <script>
 var scaleSlider = null;
 var scaleValue = null;
@@ -12,6 +13,7 @@ var image = null;
 var fixFileObject = null;
 var scale = null;
 var messageArea = null;
+var pdfFlag = false;
 var csrf_token_name = "{$csrf_token_name}";
 var csrf_hash = "{$csrf_hash}";
 
@@ -48,12 +50,18 @@ function createPreview(event) {
         return;
     }
 
-    if (fileObject.type.match(/^image\/(jpeg|png)$/) === null) {
-        // jpegとpng以外の場合はクリアして終了
+    if (fileObject.type.match(/^(image\/jpeg|image\/png|application\/pdf)$/) === null) {
+        // jpegとpngとpdf以外の場合はクリアして終了
         var fileArea = document.getElementById("file-input");
         fileArea.innerHTML = fileArea.innerHTML;
         setFileEventListenner();
         return;
+    }
+
+    if (fileObject.type.match(/^application\/pdf$/) !== null) {
+        pdfFlag = true;
+    } else {
+        pdfFlag = false;
     }
 
     fixFileObject = fileObject;
@@ -64,7 +72,38 @@ function createPreview(event) {
 
     reader.onload = (function(fileObject) {
         return function(event) {
-            image.src = event.target.result;// base64
+            if (pdfFlag === false) {
+                image.src = event.target.result;// base64
+            } else {
+                var pdf64Data = event.target.result;
+                pdf64Data = pdf64Data.split(',')[1];
+                pdf64Data = atob(pdf64Data);
+                var unit8Array = new Uint8Array(pdf64Data.length);
+                unit8Array.forEach(function(element, index) {
+                    unit8Array[index] = pdf64Data.charCodeAt(index);
+                });
+                PDFJS.getDocument(unit8Array)
+                    .then(function(pdf) {
+                        return pdf.getPage(1);
+                    })
+                    .then(function(page) {
+                        var scale = scaleSlider.value;
+                        var viewport = page.getViewport(scale);
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        var renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        // Render PDF page
+                        page.render(renderContext);
+                    })
+                    .catch(error => {
+                        messageArea.innerHTML = '<span style="color: red;">ファイルの読み込みに失敗しました。</span>';
+                    });
+            }
         };
     })(fileObject);
 
@@ -138,7 +177,7 @@ function submitResizeFile() {
 <body>
 <form id="form">
     Scale : <input id="scale" type="range" step="0.1" min="0.1" max="1" value="1"><input disabled id="scale-value" type="text" value="1" style="width: 2rem;">
-    <div id="file-input"><input id="file-selecter" type="file" name="file" accept="image/jpeg, image/png"></div>
+    <div id="file-input"><input id="file-selecter" type="file" name="file" accept="image/jpeg, image/png, application/pdf"></div>
     <div><canvas id="thumbnail" width="10" height="10"></canvas></div>
     <input type="button" value="送信" onclick="submitResizeFile()">
     <div id="message"></div>
