@@ -12,6 +12,7 @@ codeigniterを配置しておく
 ## フォルダ構成調整
 
 不要フォルダ・ファイル削除
+
 ```
 user_guide
 readme.rst
@@ -19,11 +20,13 @@ contributing.md
 ```
 
 管理画面クラス格納用
+
 ```
 application/controllers/backend
 ```
 
 テンプレートファイル格納用
+
 ```
 application/views/templates
 application/views/templates/backend
@@ -31,6 +34,7 @@ application/views/templates_c
 ```
 
 ルートの.gitignoreに以下を追加
+
 ```
 application/views/templates_c/*
 ```
@@ -52,6 +56,7 @@ composer.json
 ```
 
 ルートの.gitignoreに以下を追加
+
 ```
 application/tests/build/*
 ```
@@ -61,6 +66,7 @@ application/tests/build/*
 ルートのディレクトリに移動する
 
 composer.json
+
 ```
 "require": {
     "smarty/smarty": "^3.1"
@@ -68,16 +74,19 @@ composer.json
 ```
 
 Smarty読み込み用ライブラリ追加
+
 ```
 cp doc/Smarty.php system/libraries/Smarty.php
 ```
 
 application/config/autoload.php
+
 ```
 $autoload['libraries'] = array('smarty');
 ```
 
 application/config/config.php
+
 ```
 $config['composer_autoload'] = './vendor/autoload.php';
 ```
@@ -85,6 +94,7 @@ $config['composer_autoload'] = './vendor/autoload.php';
 ## ログの設定
 
 application/config/config.php
+
 ```
 $config['log_threshold'] = 3;// Informational Messages
 $config['log_path'] = 'application/logs/';
@@ -92,11 +102,14 @@ $config['log_file_extension'] = '.log';
 ```
 
 ログファイルをログレベル毎に分ける
+
 ```
 cp doc/MY_Log.php application/core/MY_Log.php
 ```
 
 出力は方法は
+
+```
 log_message('info', 'wellcom');
 ```
 
@@ -106,13 +119,14 @@ CI_ENV developmentの設定をproductionにすると画面エラーは出なく�
 アプリケーションログは記録されるので問題ありません。
 fatalログはアプリ側でキャッチできないので/var/log/nginxのログを確認します。
 
-
 application/config/config.php
+
 ```
 $config['index_page'] = '';
 ```
 
 nginx.conf
+
 ```
         # 413 Request Entity Too Large
         client_max_body_size 20M;
@@ -144,7 +158,7 @@ nginx.conf
             root           /home/public/app;
             fastcgi_pass   127.0.0.1:9000;
             fastcgi_index  index.php;
-            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
             fastcgi_param CI_ENV development;
             include        fastcgi_params;
         }
@@ -192,6 +206,7 @@ mysql -u root -p[password] < doc/app_test.sql
 # DB設定
 
 application/config/autoload.php
+
 ```
 $autoload['libraries'] = array('smarty', 'database');
 ```
@@ -201,6 +216,7 @@ application/config/database.phpを設定する
 ## DBエラーを扱えるようにする
 
 application/config/database.php
+
 ```
 $db['default']['db_debug'] = FALSE;
 ```
@@ -208,15 +224,20 @@ $db['default']['db_debug'] = FALSE;
 この設定をしないとDBエラーの際にその場で止まり先の処理も行われない。
 DBエラー自体はExceptionでキャッチできないのでエラー処理がうまくできない。
 この設定をすることによってその場で止まらなくなるので先の処理にたどり着けるので
+
 ```
 $this->db->affected_rows();
 ```
+
 やらでうまく扱うことができるようになる。
 また、エラー内容を取得したい場合は
+
 ```
 $this->db->error();
 ```
+
 で取得できる
+
 ```
 例）エラーがある場合
 array(2) {
@@ -238,6 +259,7 @@ array(2) {
 # memchached設定
 
 application/config/autoload.php
+
 ```
 $autoload['drivers'] = array('cache');
 ```
@@ -245,9 +267,11 @@ $autoload['drivers'] = array('cache');
 # その他設定
 
 application/config/autoload.php
+
 ```
 $autoload['helper'] = array('url');
 ```
+
 どこでも```redirect()```が使えるようになります
 
 # 基本機能のみ作成済み
