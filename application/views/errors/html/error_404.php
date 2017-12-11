@@ -59,6 +59,12 @@ p {
 	<div id="container">
 		<h1><?php echo $heading; ?></h1>
 		<?php echo $message; ?>
+		<?php
+		if (isset($_SERVER['HTTP_REFERER']))
+		{
+			echo '<p><a href="' . $_SERVER['HTTP_REFERER'] . '">back to previous page</a></p>';
+		}
+		?>
 	</div>
 </body>
 </html>
