@@ -47,41 +47,38 @@ class Login extends CI_Controller {
         $this->form_validation->set_rules('name', 'ユーザー名', 'required|max_length[20]');
         $this->form_validation->set_rules('password', 'パスワード', 'required|min_length[6]');
 
-        if ($this->form_validation->run() === true)
+        if ($this->form_validation->run() !== true)
         {
-            // バリデーションエラーがない場合にログイン
-
-            $user_data = [
-                'name' => $this->input->post('name', true),
-                'password' => $this->input->post('password', true),
-            ];
-
-            try
-            {
-                 $result = $this->User_backend->sign_in($user_data);
-                 if ($result === false)
-                 {
-                    $data['error_message'] = 'ログインに失敗しました。';
-                    $this->smarty->view('backend/login/index.html', $data);
-                    return;
-                 }
-            }
-            catch (Exception $exception)
-            {
-                $data['error_message'] = $exception->getMessage();
-                $this->smarty->view('backend/login/index.html', $data);
-                return;
-            }
-
-            // 管理画面に遷移
-            redirect('backend/top');
+            // バリデーションエラーの場合
+            $data['validation_errors'] = validation_errors();
+            $this->smarty->view('backend/login/index.html', $data);
             return;
         }
 
-        // バリデーションエラーの場合
-        $data['validation_errors'] = validation_errors();
-        $this->smarty->view('backend/login/index.html', $data);
-        return;
+        $user_data = [
+            'name' => $this->input->post('name', true),
+            'password' => $this->input->post('password', true),
+        ];
+
+        try
+        {
+            $result = $this->User_backend->sign_in($user_data);
+            if ($result === false)
+            {
+                $data['error_message'] = 'ログインに失敗しました。';
+                $this->smarty->view('backend/login/index.html', $data);
+                return;
+            }
+        }
+        catch (Exception $exception)
+        {
+            $data['error_message'] = $exception->getMessage();
+            $this->smarty->view('backend/login/index.html', $data);
+            return;
+        }
+
+        // 管理画面に遷移
+        redirect('backend/top');
     }
 
     /**
@@ -118,43 +115,40 @@ class Login extends CI_Controller {
         $this->form_validation->set_rules('mailadress', 'メールアドレス', 'required|valid_email');
         $this->form_validation->set_rules('password', 'パスワード', 'required|min_length[6]');
 
-        if ($this->form_validation->run() === true) {
-            // バリデーションエラーがない場合に管理者ユーザーを登録
-
-            $this->load->model('service/Role_backend');
-
-            $user_data = [
-                'name' => $this->input->post('name', true),
-                'mailadress' => $this->input->post('mailadress', true),
-                'password' => $this->input->post('password', true),
-                'role' => $this->Role_backend::ADMIN,
-            ];
-
-            try
-            {
-                 $result = $this->User_backend->sign_up($user_data);
-                 if ($result === false)
-                 {
-                    $data['error_message'] = '管理者ユーザーの登録に失敗しました。';
-                    $this->smarty->view('backend/login/initialize.html', $data);
-                    return;
-                 }
-            }
-            catch (Exception $exception)
-            {
-                $data['error_message'] = $exception->getMessage();
-                $this->smarty->view('backend/login/initialize.html', $data);
-                return;
-            }
-
-            // ログイン画面に遷移
-            redirect('backend/login');
+        if ($this->form_validation->run() !== true) {
+            // バリデーションエラーの場合
+            $data['validation_errors'] = validation_errors();
+            $this->smarty->view('backend/login/initialize.html', $data);
             return;
         }
 
-        // バリデーションエラーの場合
-        $data['validation_errors'] = validation_errors();
-        $this->smarty->view('backend/login/initialize.html', $data);
-        return;
+        $this->load->model('service/Role_backend');
+
+        $user_data = [
+            'name' => $this->input->post('name', true),
+            'mailadress' => $this->input->post('mailadress', true),
+            'password' => $this->input->post('password', true),
+            'role' => $this->Role_backend::ADMIN,
+        ];
+
+        try
+        {
+                $result = $this->User_backend->sign_up($user_data);
+                if ($result === false)
+                {
+                $data['error_message'] = '管理者ユーザーの登録に失敗しました。';
+                $this->smarty->view('backend/login/initialize.html', $data);
+                return;
+                }
+        }
+        catch (Exception $exception)
+        {
+            $data['error_message'] = $exception->getMessage();
+            $this->smarty->view('backend/login/initialize.html', $data);
+            return;
+        }
+
+        // ログイン画面に遷移
+        redirect('backend/login');
     }
 }
