@@ -31,7 +31,6 @@ class Login extends CI_Controller {
         {
             // 管理者ユーザー登録画面に遷移
             redirect('backend/login/initialize');
-            return;
         };
 
         if (is_null($this->input->post()))
@@ -97,7 +96,6 @@ class Login extends CI_Controller {
         {
             // ログイン画面に遷移
             redirect('backend/login');
-            return;
         }
 
         if (is_null($this->input->post()))

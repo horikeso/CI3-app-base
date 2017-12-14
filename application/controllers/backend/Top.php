@@ -18,7 +18,6 @@ class Top extends Backend_Controller {
         if (is_null($user_object))
         {
             redirect('backend/logout');
-            return;
         }
 
         $this->load->model('service/Role_backend');
