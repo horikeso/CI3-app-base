@@ -3,19 +3,22 @@
 <head>
 <meta charset="utf-8">
 <title>Welcome to CodeIgniter</title>
-<script type="text/javascript" src="/public/js/pdf.js" async></script>
+<script type="text/javascript" src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+<script type="text/javascript" src="https://mozilla.github.io/pdf.js/build/pdf.worker.js"></script>
 <script>
-var scaleSlider = null;
-var scaleValue = null;
-var canvas = null;
-var context = null;
-var image = null;
-var fixFileObject = null;
-var scale = null;
-var messageArea = null;
-var pdfFlag = false;
-var csrf_token_name = "{$csrf_token_name}";
-var csrf_hash = "{$csrf_hash}";
+let scaleSlider = null;
+let scaleValue = null;
+let canvas = null;
+let context = null;
+let image = null;
+const reader = new FileReader();
+let fixFileObject = null;
+let scale = null;
+let messageArea = null;
+let pdfFlag = false;
+const pdfImageExtention = "png";
+const csrf_token_name = "{$csrf_token_name}";
+let csrf_hash = "{$csrf_hash}";
 
 document.addEventListener("DOMContentLoaded", function() {
     canvas = document.getElementById("thumbnail");
@@ -44,7 +47,7 @@ function createPreview(event) {
 
     fixFileObject = null;
 
-    var fileObject = event.target.files[0];
+    let fileObject = event.target.files[0];
 
     if (typeof fileObject === "undefined") {
         return;
@@ -52,124 +55,127 @@ function createPreview(event) {
 
     if (fileObject.type.match(/^(image\/jpeg|image\/png|application\/pdf)$/) === null) {
         // jpegとpngとpdf以外の場合はクリアして終了
-        var fileArea = document.getElementById("file-input");
+        let fileArea = document.getElementById("file-input");
         fileArea.innerHTML = fileArea.innerHTML;
         setFileEventListenner();
         return;
     }
 
-    if (fileObject.type.match(/^application\/pdf$/) !== null) {
-        pdfFlag = true;
-    } else {
-        pdfFlag = false;
-    }
+    pdfFlag = fileObject.type.match(/^application\/pdf$/) !== null;
 
     fixFileObject = fileObject;
 
     image = new Image();
 
-    var reader = new FileReader();
+    reader.onload = function(event) {
+        if ( ! pdfFlag) {
+            image.src = event.target.result;// base64
+        } else {
+            PDFJS.getDocument(new Uint8Array(event.target.result))
+                .then(pdf => {
+                    return pdf.getPage(1);
+                })
+                .then(page => {
+                    canvas.style.display = "none";// 読み込み時に下記のサイズで描画されるのでdrawCanvas()まで非表示にしておく
+                    // ここで基準となるcanvasサイズが決まるのでscaleは1で読み込んでおく
+                    let viewport = page.getViewport(1);
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
 
-    reader.onload = (function(fileObject) {
-        return function(event) {
-            if (pdfFlag === false) {
-                image.src = event.target.result;// base64
-            } else {
-                var pdf64Data = event.target.result;
-                pdf64Data = pdf64Data.split(',')[1];
-                pdf64Data = atob(pdf64Data);
-                var unit8Array = new Uint8Array(pdf64Data.length);
-                unit8Array.forEach(function(element, index) {
-                    unit8Array[index] = pdf64Data.charCodeAt(index);
-                });
-                PDFJS.getDocument(unit8Array)
-                    .then(function(pdf) {
-                        return pdf.getPage(1);
-                    })
-                    .then(function(page) {
-                        var scale = scaleSlider.value;
-                        var viewport = page.getViewport(scale);
-                        canvas.height = viewport.height;
-                        canvas.width = viewport.width;
+                    let renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
 
-                        var renderContext = {
-                            canvasContext: context,
-                            viewport: viewport
-                        };
-
-                        // Render PDF page
-                        page.render(renderContext);
-                    })
-                    .catch(error => {
-                        messageArea.innerHTML = '<span style="color: red;">ファイルの読み込みに失敗しました。</span>';
+                    // Render PDF page and set image
+                    return page.render(renderContext);// Promise
+                })
+                .then(() => {
+                    return new Promise(resolve => {
+                        canvas.toBlob(blob => {
+                            resolve(blob);
+                        }, "image/" + pdfImageExtention);
                     });
-            }
-        };
-    })(fileObject);
+                })
+                .then(blob => {
+                    if(image.src) {
+                        URL.revokeObjectURL(oldSrc);// 開放
+                    }
+                    image.src = URL.createObjectURL(blob);
+                })
+                .catch(error => {
+                    messageArea.innerHTML = '<span style="color: red;">ファイルの読み込みに失敗しました。</span>';
+                });
+        }
+    }
 
     image.onload = function() {
         drawCanvas();
     }
 
-    reader.readAsDataURL(fileObject);
+    pdfFlag ? reader.readAsArrayBuffer(fileObject) : reader.readAsDataURL(fileObject);
 }
 
 function drawCanvas() {
     scale = scaleSlider.value;
     if (image !== null) {
-        var imageWidth = parseInt(image.width * scale, 10);
-        var imageHeight = parseInt(image.height * scale, 10);
+        let imageWidth = parseInt(image.width * scale, 10);
+        let imageHeight = parseInt(image.height * scale, 10);
         canvas.width = imageWidth;
         canvas.height = imageHeight;
         context.clearRect(0, 0, imageWidth, imageHeight);
         context.drawImage(image, 0, 0, imageWidth, imageHeight);
     }
+    if (canvas.style.display === "none")
+    {
+        canvas.style.display = "inherit";
+    }
 }
 
-function submitResizeFile() {
-    if (image !== null) {
+// awaitを使うのでasync宣言
+async function submitResizeFile() {
+    if (image !== null && fixFileObject !== null) {
 
-        var resizeFileObject = null;
+        let fileType = pdfFlag ? "image/" + pdfImageExtention : fixFileObject.type;
+        let fileName = pdfFlag ? fixFileObject.name.replace(/pdf/g, pdfImageExtention) : fixFileObject.name;
 
-        if (scale !== 1) {
-            // サイズ変更があった場合だけ送信用ファイルを作成
-            var image64Data = canvas.toDataURL(fixFileObject.type);
-            image64Data = image64Data.split(',')[1];
-            imageData = atob(image64Data);
-            var unit8Array = new Uint8Array(imageData.length);
-            unit8Array.forEach(function(element, index) {
-                unit8Array[index] = imageData.charCodeAt(index);
-            });
-            resizeFileObject = new File(
-                [unit8Array],
-                fixFileObject.name,
-                {
-                    type: fixFileObject.type
+        // toBlobが非同期処理なのでawaitでPromise待ち
+        let resizeFileObject = await (() => {
+            return new Promise(resolve => {
+                if (scale != 1 || pdfFlag === true) {
+                    // 画像ファイルでサイズ変更があった場合またはPDFファイルの場合に送信用ファイルを作成
+                    canvas.toBlob(blob => {
+                        resolve(blob);
+                    }, fileType);
+                } else {
+                    // 画像ファイルでサイズ変更がない場合はそのまま
+                    resolve(fixFileObject);
                 }
-            );
-        } else {
-            // サイズ変更がない場合はそのまま
-            resizeFileObject = fixFileObject;
-        }
+            });
+        })();
 
-        var formData = new FormData();
+        let formData = new FormData();
         formData.append(csrf_token_name, csrf_hash);
-        formData.append("file", resizeFileObject);
+        formData.append("file", resizeFileObject, fileName);
 
         // input type file の 値はjavascriptで上書き出来ないのでajaxで送信する
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                csrf_hash = JSON.parse(xhr.response).csrf_hash;
-                if (xhr.status === 200) {
-                    messageArea.innerHTML = '<span style="color: green;">ファイルの送信に成功しました。</span>';
-                } else {
-                    messageArea.innerHTML = '<span style="color: red;">ファイルの送信に失敗しました。</span>';
-                }
+        fetch("/root/execute_upload", {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin",// send Cookie csrf_token
+        }).then(response => {
+            // Forbidden is not json
+            if (response.status !== 403) {
+                response.json().then(function(json) {
+                    csrf_hash = json.csrf_hash;
+                });
             }
-        }
-        xhr.open("POST", "/root/execute_upload");
-        xhr.send(formData);
+            if (response.ok) {
+                messageArea.innerHTML = '<span style="color: green;">ファイルの送信に成功しました。</span>';
+            } else {
+                messageArea.innerHTML = '<span style="color: red;">ファイルの送信に失敗しました。</span>';
+            }
+        });
     }
 }
 </script>
