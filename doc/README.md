@@ -168,6 +168,8 @@ nginx.conf
 nginx -s reload
 ```
 
+# [ネームスペースを使うには](http://stackoverflow.com/questions/3700626/namespace-in-php-codeigniter-framework#21858556)
+
 ## 画面へのプロファイラの出力方法
 
 ```
@@ -284,4 +286,6 @@ GET /backend/api/user?page=3&unit=3
 
 フロント
 /
+
+
 
