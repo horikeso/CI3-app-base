@@ -6,7 +6,7 @@ class CI_Extender {
     {
         spl_autoload_register(function ($class) {
             $file_path = APPPATH . 'ci_extender/' . $class . '.php';
-            if (file_exists($file_path) === true)
+            if (file_exists($file_path))
             {
                 include $file_path;
             }
