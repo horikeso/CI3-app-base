@@ -15,7 +15,7 @@ DROP SCHEMA IF EXISTS `app` ;
 -- -----------------------------------------------------
 -- Schema app
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `app` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `app` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `app` ;
 
 -- -----------------------------------------------------
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS `app`.`backend_user` (
   UNIQUE INDEX `name_UNIQUE` (`name` ASC),
   UNIQUE INDEX `display_id_UNIQUE` (`display_id` ASC))
 ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8
+DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci
 COMMENT = '管理画面ユーザー';
 
 
