@@ -23,6 +23,10 @@ class CI_Smarty extends Smarty {
 
     function view($template, $data = array(), $return = FALSE)
     {
+        // HTMLエスケープをデフォルトの挙動にする
+        // エスケープしない方法は出力時に{$var nofilter}と記述
+        $this->default_modifiers = array('escape:"html"');
+
         foreach ($data as $key => $val)
         {
             $this->assign($key, $val);
